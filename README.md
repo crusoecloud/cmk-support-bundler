@@ -5,14 +5,13 @@ Collects diagnostic information from your CMK Slurm cluster and packages it into
 ## Usage
 
 ```bash
-curl -sL https://raw.githubusercontent.com/crusoecloud/cmk-support-bundler/main/collect.sh | bash
+curl -sL https://raw.githubusercontent.com/crusoecloud/cmk-support-bundler/main/collect.sh -o collect.sh
+bash collect.sh <namespace>
 ```
 
-The script will prompt you for the namespace where your SlurmCluster is deployed, then handle everything automatically. You can also pass the namespace directly:
+Replace `<namespace>` with the namespace where your SlurmCluster is deployed. If you omit it, the script will prompt you.
 
-```bash
-curl -sL https://raw.githubusercontent.com/crusoecloud/cmk-support-bundler/main/collect.sh | bash -s -- <namespace>
-```
+The script will show which cluster and namespaces it will access, then ask for confirmation before proceeding.
 
 ## What is collected
 

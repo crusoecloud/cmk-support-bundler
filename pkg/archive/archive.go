@@ -198,6 +198,11 @@ func sanitizeUnstructured(obj map[string]interface{}, fieldsToRemove []string) m
 		return obj
 	}
 
+	// Remove managedFields (K8s internal metadata, can contain sensitive field copies)
+	if metadata, ok := copy["metadata"].(map[string]interface{}); ok {
+		delete(metadata, "managedFields")
+	}
+
 	// Remove fields from spec
 	if spec, ok := copy["spec"].(map[string]interface{}); ok {
 		for _, field := range fieldsToRemove {
