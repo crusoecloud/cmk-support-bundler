@@ -142,18 +142,6 @@ func (z *zipHelper) writeHelm(baseDir string, release *common.HelmRelease) error
 	return z.write(filepath.Join(baseDir, "manifest.yaml"), release.Manifest, false)
 }
 
-// extractObjects plucks raw maps out of Unstructured lists for YAML marshaling.
-func extractObjects(items []unstructured.Unstructured) []interface{} {
-	if len(items) == 0 {
-		return nil
-	}
-	var out []interface{}
-	for _, item := range items {
-		out = append(out, item.Object)
-	}
-	return out
-}
-
 // sanitizePod returns a copy of the pod with Env and EnvFrom stripped from all containers.
 func sanitizePod(pod *corev1.Pod) corev1.Pod {
 	sanitized := pod.DeepCopy()
@@ -198,9 +186,12 @@ func sanitizeUnstructured(obj map[string]interface{}, fieldsToRemove []string) m
 		return obj
 	}
 
-	// Remove managedFields (K8s internal metadata, can contain sensitive field copies)
+	// Remove K8s internal metadata that can contain copies of sensitive fields
 	if metadata, ok := copy["metadata"].(map[string]interface{}); ok {
 		delete(metadata, "managedFields")
+		if annotations, ok := metadata["annotations"].(map[string]interface{}); ok {
+			delete(annotations, "kubectl.kubernetes.io/last-applied-configuration")
+		}
 	}
 
 	// Remove fields from spec
@@ -210,6 +201,18 @@ func sanitizeUnstructured(obj map[string]interface{}, fieldsToRemove []string) m
 		}
 	}
 	return copy
+}
+
+// sanitizeUnstructuredList sanitizes a list of unstructured objects, stripping K8s metadata cruft.
+func sanitizeUnstructuredList(items []unstructured.Unstructured) []interface{} {
+	if len(items) == 0 {
+		return nil
+	}
+	var out []interface{}
+	for _, item := range items {
+		out = append(out, sanitizeUnstructured(item.Object, nil))
+	}
+	return out
 }
 
 // WriteZip writes the debug report to a zip file with component-centric organization.
@@ -237,10 +240,11 @@ func WriteZip(outputPath string, dr *common.DebugReport) error {
 		_ = z.write("cluster/slurmcluster.yaml", obj, false)
 	}
 	if dr.SlinkyController != nil {
-		_ = z.write("cluster/slinky-controller.yaml", dr.SlinkyController.Object, false)
+		obj := sanitizeUnstructured(dr.SlinkyController.Object, nil)
+		_ = z.write("cluster/slinky-controller.yaml", obj, false)
 	}
-	_ = z.write("cluster/slinky-loginsets.yaml", extractObjects(dr.SlinkyLoginSets), false)
-	_ = z.write("cluster/slinky-nodesets.yaml", extractObjects(dr.SlinkyNodeSets), false)
+	_ = z.write("cluster/slinky-loginsets.yaml", sanitizeUnstructuredList(dr.SlinkyLoginSets), false)
+	_ = z.write("cluster/slinky-nodesets.yaml", sanitizeUnstructuredList(dr.SlinkyNodeSets), false)
 
 	// Operator
 	for key, logs := range dr.OperatorLogs {
