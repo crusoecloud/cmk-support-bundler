@@ -1,0 +1,262 @@
+# ============================================================
+# CMK SUPPORT BUNDLER
+# ============================================================
+#
+# Namespace placeholder __SLURM_NAMESPACE__ is replaced by collect.sh
+# at deploy time to scope permissions to the target namespace.
+#
+# ============================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crusoe-debug
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cmk-support-bundler
+  namespace: crusoe-debug
+---
+# ClusterRole for cluster-scoped resources only (nodes)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cmk-support-bundler
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cmk-support-bundler
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: ClusterRole
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in the SlurmCluster namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: __SLURM_NAMESPACE__
+rules:
+  # Slurm CRs
+  - apiGroups: ["slurm.crusoe.ai"]
+    resources: ["slurmclusters"]
+    verbs: ["get", "list"]
+  # Slinky CRs
+  - apiGroups: ["slinky.slurm.net"]
+    resources: ["controllers", "loginsets", "nodesets"]
+    verbs: ["get", "list"]
+  # Core resources
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "configmaps", "events", "persistentvolumeclaims", "services", "endpoints"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: __SLURM_NAMESPACE__
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in slinky namespace for operator/topograph logs and helm releases
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: slinky
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: slinky
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in cert-manager namespace for pod listing and helm release
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: cert-manager
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "secrets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: cert-manager
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in nvidia-gpu-operator namespace for pod listing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: nvidia-gpu-operator
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: nvidia-gpu-operator
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in nvidia-network-operator namespace for pod listing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: nvidia-network-operator
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: nvidia-network-operator
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in crusoe-system namespace for pod listing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: crusoe-system
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: crusoe-system
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+# Role in kube-system namespace for pod listing
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cmk-support-bundler
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cmk-support-bundler
+  namespace: kube-system
+subjects:
+  - kind: ServiceAccount
+    name: cmk-support-bundler
+    namespace: crusoe-debug
+roleRef:
+  kind: Role
+  name: cmk-support-bundler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cmk-support-bundler
+  namespace: crusoe-debug
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 0
+  template:
+    spec:
+      serviceAccountName: cmk-support-bundler
+      restartPolicy: Never
+      containers:
+        - name: debug
+          image: ghcr.io/crusoecloud/cmk/cmk-support-bundler:latest
+          args:
+            - --namespace=__SLURM_NAMESPACE__
+            - --output=/output/debug.zip
+            - --wait
+          volumeMounts:
+            - name: output
+              mountPath: /output
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+      volumes:
+        - name: output
+          emptyDir: {}
